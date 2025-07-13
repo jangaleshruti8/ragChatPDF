@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ask Questions from PDF</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #333;
+    }
+
+    input[type="file"],
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #357bd8;
+    }
+
+    .chatbox {
+      background: #f0f0f5;
+      border-radius: 8px;
+      padding: 20px;
+      min-height: 200px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+      font-size: 15px;
+    }
+
+    .status {
+      text-align: center;
+      font-size: 14px;
+      margin: 10px 0;
+      color: #5a5a5a;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>📄 RAG PDF Query Chatbot</h2>
+
+    <input type="file" id="pdfFile">
+    <button onclick="uploadPdf()">Upload PDF</button>
+    <p class="status" id="uploadStatus"></p>
+
+    <h3>Ask a Question</h3>
+    <input type="text" id="question" placeholder="Type your question here...">
+    <button onclick="askQuestion()">Ask</button>
+
+    <div class="chatbox">
+      <strong>Answer:</strong>
+      <p id="answer">Your answer will appear here...</p>
+    </div>
+  </div>
+
+  <script>
+    function uploadPdf() {
+      const file = document.getElementById('pdfFile').files[0];
+      if (!file) {
+        alert("Please select a PDF file.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      document.getElementById('uploadStatus').innerText = 'Uploading and processing...';
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('uploadStatus').innerText = data.message || data.error;
+      });
+    }
+
+    function askQuestion() {
+      const query = document.getElementById('question').value.trim();
+      if (!query) {
+        alert("Please enter a question.");
+        return;
+      }
+
+      document.getElementById('answer').innerText = 'Generating answer...';
+
+      fetch('/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('answer').innerText = data.answer || data.error;
+      });
+    }
+  </script>
+</body>
+</html>
