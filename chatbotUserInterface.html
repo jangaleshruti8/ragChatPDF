@@ -26,12 +26,14 @@
     }
 
     input[type="file"],
-    input[type="text"] {
+    input[type="text"],
+    select {
       width: 100%;
       padding: 12px;
       margin: 10px 0;
       border: 1px solid #ccc;
       border-radius: 6px;
+      font-size: 16px;
     }
 
     button {
@@ -65,6 +67,12 @@
       margin: 10px 0;
       color: #5a5a5a;
     }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin: 15px 0 5px;
+    }
   </style>
 </head>
 <body>
@@ -77,6 +85,12 @@
     <p class="status" id="uploadStatus"></p>
 
     <h3>Ask a Question</h3>
+
+    <label for="fileSelector">🔎 Query from indexed PDFs:</label>
+    <select id="fileSelector">
+      <option disabled selected>Loading indexed PDFs...</option>
+    </select>
+
     <input type="text" id="question" placeholder="Type your question here...">
     <button onclick="askQuestion()">Ask</button>
 
@@ -87,6 +101,35 @@
   </div>
 
   <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Populate dropdown
+      fetch('/files')
+        .then(res => res.json())
+        .then(data => {
+  const selector = document.getElementById('fileSelector');
+  selector.innerHTML = '';
+
+  const placeholder = document.createElement('option');
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  placeholder.innerText = 'Select desired file to query on';
+  selector.appendChild(placeholder);
+
+  data.forEach(file => {
+    const opt = document.createElement('option');
+    opt.value = file;
+    opt.innerText = file;
+    selector.appendChild(opt);
+  });
+}) // ✅ Now this is correctly closing the .then()
+
+        
+        .catch(err => {
+          console.error('Error fetching file list:', err);
+          alert("Could not load indexed file list.");
+        });
+    });
+
     function uploadPdf() {
       const file = document.getElementById('pdfFile').files[0];
       if (!file) {
@@ -106,22 +149,35 @@
       .then(res => res.json())
       .then(data => {
         document.getElementById('uploadStatus').innerText = data.message || data.error;
+
+        // Refresh dropdown after upload
+        return fetch('/files');
+      })
+      .then(res => res.json())
+      .then(data => {
+        const selector = document.getElementById('fileSelector');
+        selector.innerHTML = '';
+        data.forEach(file => {
+          const opt = document.createElement('option');
+          opt.value = file;
+          opt.innerText = file;
+          selector.appendChild(opt);
+        });
       });
     }
 
     function askQuestion() {
       const query = document.getElementById('question').value.trim();
-      if (!query) {
-        alert("Please enter a question.");
-        return;
-      }
+      const fileName = document.getElementById('fileSelector').value;
+      if (!query) return alert("Please enter a question.");
+      if (!fileName) return alert("Please select a file to query from.");
 
       document.getElementById('answer').innerText = 'Generating answer...';
 
       fetch('/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query })
+        body: JSON.stringify({ query, filename: fileName })
       })
       .then(res => res.json())
       .then(data => {

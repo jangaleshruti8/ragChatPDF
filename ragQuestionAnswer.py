@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify, send_from_directory
 from pathlib import Path
 from pipeline import chunkingFiles, indexingFiles, textExtraction, uploadFiles, ragChatBot
+from rag_config import ensureDirs
 import os
 
 app = Flask(__name__)
+ensureDirs()
 
 @app.route('/upload', methods=['POST'])
 def upload_pdf():
@@ -17,7 +19,7 @@ def upload_pdf():
     if raw_text:
         textExtraction.saveRawText(raw_text, file_path)
         chunks = chunkingFiles.chunkText(raw_text)
-        indexingFiles.indexChunks(chunks, {"source": file.filename})
+        indexingFiles.indexChunks(chunks, {"source": file.filename}, Path(file.filename).stem)
         return jsonify({"message": "File indexed successfully!"})
 
     return jsonify({"error": "Text extraction failed."}), 500
@@ -26,13 +28,19 @@ def upload_pdf():
 def answer_question():
     data = request.get_json()
     query = data.get('query')
-    if not query:
-        return jsonify({"error": "No query provided."}), 400
+    fileName = data.get('filename')
 
-    matched_chunks = ragChatBot.queryChunks(query)
+    if not query or not fileName:
+        return jsonify({"error": "Query and filename required."}), 400
+
+    matched_chunks = ragChatBot.queryChunks(query, fileName)
     context = "\n\n".join(matched_chunks)
     answer = ragChatBot.generateAnswerWithGroq(query, context)
     return jsonify({"answer": answer})
+
+@app.route('/files', methods=['GET'])
+def list_files():
+    return jsonify(indexingFiles.listIndexedFiles())
 
 @app.route('/')
 def serve_ui():

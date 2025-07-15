@@ -1,35 +1,31 @@
+
 import faiss
 import pickle
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from rag_config import embeddingModel,indexPath,vectorDimension,documentStorePath
+from rag_config import embeddingModel, indexDirectory, vectorDimension, documentDirectory
 from pathlib import Path
-
 
 embeddingModel = SentenceTransformer(embeddingModel)
 
 def embedChunks(chunks: list) -> np.ndarray:
     return embeddingModel.encode(chunks)
 
-def createOrLoadIndex():
-    if Path(indexPath).exists():
-        return faiss.read_index(indexPath)
-    return faiss.IndexFlatL2(vectorDimension)
-
-def indexChunks(chunks: list, docMeta: dict):
+def indexChunks(chunks: list, docMeta: dict, fileName: str):
     vectors = embedChunks(chunks)
-    index = createOrLoadIndex()
+    index = faiss.IndexFlatL2(vectorDimension)
     index.add(np.array(vectors, dtype=np.float32))
 
-    if Path(documentStorePath).exists():
-        with open(documentStorePath, "rb") as f:
-            docStore = pickle.load(f)
-    else:
-        docStore = []
+    docStore = [{"text": chunk, "meta": docMeta} for chunk in chunks]
 
-    for i, chunk in enumerate(chunks):
-        docStore.append({"text": chunk, "meta": docMeta})
+    # Save by file name
+    indexPath = Path(indexDirectory) / f"{fileName}.index"
+    docPath = Path(documentDirectory) / f"{fileName}.pkl"
 
-    with open(documentStorePath, "wb") as f:
+    faiss.write_index(index, str(indexPath))
+    with open(docPath, "wb") as f:
         pickle.dump(docStore, f)
-    faiss.write_index(index, indexPath)
+
+
+def listIndexedFiles():
+    return [f.stem for f in Path(indexDirectory).glob("*.index")]

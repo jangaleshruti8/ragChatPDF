@@ -119,3 +119,8 @@ Receive an answer based on relevant context from the uploaded PDF
 ##  Clone This Repository
 git clone https://github.com/jangaleshruti8/ragChatPDF.git
 cd ragChatBotRepo
+
+## updates 
+ Implemented adaptive context thresholding to filter out low-relevance results dynamically.
+
+ UI now supports dropdown-based file selection for more accurate, document-specific querying.
