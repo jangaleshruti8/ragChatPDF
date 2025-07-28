@@ -35,7 +35,7 @@ def answer_question():
 
     matched_chunks = ragChatBot.queryChunks(query, fileName)
     context = "\n\n".join(matched_chunks)
-    answer = ragChatBot.generateAnswerWithGroq(query, context)
+    answer = ragChatBot.generateAnswerWithOllama(query, context)
     return jsonify({"answer": answer})
 
 @app.route('/files', methods=['GET'])

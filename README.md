@@ -1,6 +1,6 @@
 #  RAG-based PDF Query Bot 
 
-This project allows you to upload a PDF (searchable or scanned) and ask natural language questions about its contents. It uses a **Retrieval-Augmented Generation (RAG)** approach powered by **FAISS for vector search** and **Groq-hosted LLaMA3 models** for answering queries.
+This project allows you to upload a PDF (searchable or scanned) and ask natural language questions about its contents. It uses a **Retrieval-Augmented Generation (RAG)** approach powered by **FAISS for vector search** and **Ollama-hosted LLaMA3 models** for answering queries.
 
 ---
 
@@ -8,8 +8,8 @@ This project allows you to upload a PDF (searchable or scanned) and ask natural 
 
 -  Upload PDFs (searchable or image-based)
 -  Extract text using `pdfplumber` or fallback to OCR using `Tesseract`
--  Chunk, embed, and index the content using `SentenceTransformers + FAISS`
--  Ask questions about the content and receive answers powered by **Groq-hosted LLaMA3**
+-  Chunk, embed, and index the content using **locally downloaded SentenceTransformers + FAISS**
+-  Ask questions about the content and receive answers powered by **Ollama's local LLaMA3 model**
 -  Simple HTML+JS chatbot UI for interaction
 
 ---
@@ -41,7 +41,7 @@ This project allows you to upload a PDF (searchable or scanned) and ask natural 
 - When the user asks a question:
   - The question is embedded.
   - Top-k most relevant chunks are retrieved using vector similarity.
-  - The question and chunks are passed to **Groq's LLaMA3-8B** model via the OpenAI-compatible API for answer generation.
+  - The question and chunks are passed to **Ollama LLaMA3-8B** model via the OpenAI-compatible API for answer generation.
 
 ---
 
@@ -55,7 +55,7 @@ This project allows you to upload a PDF (searchable or scanned) and ask natural 
 | PDF Text       | pdfplumber                       |
 | Embeddings     | sentence-transformers            |
 | Indexing       | FAISS                            |
-| LLM API        | Groq (OpenAI API compatible)     |
+| LLM API        | Ollama                           |
 | Model          | LLaMA3-8B-8192                   |
 
 ---
@@ -80,7 +80,6 @@ chatPDF/
 ├── ragQuestionAnswer.py # Flask app
 ├── chatbotUserInterface.html # Frontend UI
 ├── rag_config.py # Configs and paths
-└── .env # API keys and paths
 
 ---
 
@@ -88,39 +87,78 @@ chatPDF/
 
 ### 1. Install Python Dependencies
 
+```sh
 pip install -r requirements.txt
-2. Install Tesseract OCR
+```
+
+### 2. Install Tesseract OCR
+
 Download and install from: https://github.com/tesseract-ocr/tesseract
 
-Update the OCR_APPLICATION_FILE_PATH in rag_config.py accordingly.
+Update the `OCR_APPLICATION_FILE_PATH` in `rag_config.py` accordingly.
 
-3. Setup .env
-Create a .env file in the root directory:
+### 3. Download SentenceTransformer Model (for offline use)
 
-GROQ_API_KEY=your_groq_api_key_here
+While online, run:
 
-4. Run the Server
+```sh
+python downloadModelSentenceTransformer.py
+```
 
+This will download and save the `all-MiniLM-L6-v2` model to the `all-MiniLM-L6-v2/` directory.  
+**After this step, the embedding model is used completely offline.**
+
+### 4. Install and Set Up Ollama (for local LLM inference)
+
+- Download and install Ollama from: https://ollama.com/download
+- Pull the LLaMA3 model (8B variant) for local use:
+
+```sh
+ollama pull llama3:8b
+```
+
+- Start the Ollama server (usually runs automatically in the background):
+
+```sh
+ollama serve
+```
+
+**Ollama and the LLaMA3-8B model run fully offline after this step.**
+
+### 5. Run the Server
+
+```sh
 python ragQuestionAnswer.py
-Visit: http://localhost:5000
+```
 
+Visit: [http://localhost:5000](http://localhost:5000)
 
-Usage Flow---
-Upload a .pdf file from the frontend
+---
 
-Text is extracted (OCR fallback if needed)
+##  Usage Flow
 
-Content is chunked and indexed
+1. Upload a .pdf file from the frontend
+2. Text is extracted (OCR fallback if needed)
+3. Content is chunked and indexed
+4. Ask questions through the text box
+5. Receive an answer based on relevant context from the uploaded PDF
 
-Ask questions through the text box
-
-Receive an answer based on relevant context from the uploaded PDF
+---
 
 ##  Clone This Repository
+
+```sh
 git clone https://github.com/jangaleshruti8/ragChatPDF.git
-cd ragChatBotRepo
+cd ragChatPDF
+```
 
-## updates 
- Implemented adaptive context thresholding to filter out low-relevance results dynamically.
 
- UI now supports dropdown-based file selection for more accurate, document-specific querying.
+#  RAG-based PDF Query Bot 
+
+This project allows you to upload a PDF (searchable or scanned) and ask natural language questions about its contents. It uses a **Retrieval-Augmented Generation (RAG)** approach powered by **FAISS for vector search** and **local LLMs via Ollama** for answering queries.
+
+---
+
+**Note:**  
+- All models (embedding and LLM) are used locally; no external API calls are required after setup.
+- Make sure Ollama is running and the model is pulled before starting the Flask

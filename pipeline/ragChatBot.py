@@ -1,17 +1,17 @@
+import openai
 import pickle
 import numpy as np
 import faiss
-from pathlib import Path
-from rag_config import indexDirectory, documentDirectory
-from pipeline.indexingFiles import embedChunks
-from openai import OpenAI
+
+from pipeline.indexingFiles import embedChunks,documentDirectory
 import rag_config
+import requests
 
 def queryChunks(query: str, fileName: str, topK: int = 5):
     embeddedQuery = embedChunks([query])[0].reshape(1, -1)
 
-    indexPath = Path(indexDirectory) / f"{fileName}.index"
-    docPath = Path(documentDirectory) / f"{fileName}.pkl"
+    indexPath = rag_config.Path(rag_config.indexDirectory) / f"{fileName}.index"
+    docPath = rag_config.Path(rag_config.documentDirectory) / f"{fileName}.pkl"
 
     if not indexPath.exists() or not docPath.exists():
         return ["No context found for selected file."]
@@ -42,14 +42,7 @@ def queryChunks(query: str, fileName: str, topK: int = 5):
     return [text for text, dist in filtered]
 
 
-
-def generateAnswerWithGroq(query: str, contextChunks: list) -> str:
-    if not contextChunks:
-        return "I'm sorry, I cannot answer this question because the available context is insufficient."
-
-    context = "\n\n".join(contextChunks)
-
-    client = OpenAI(api_key=rag_config.groqApiKey, base_url="https://api.groq.com/openai/v1")
+def generateAnswerWithOllama(query: str, context: str) -> str:
     prompt = f"""
     Use the context below to answer the question. If the context doesn't help, say so.
 
@@ -61,9 +54,19 @@ def generateAnswerWithGroq(query: str, contextChunks: list) -> str:
 
     ANSWER:
     """
-    response = client.chat.completions.create(
-        model="llama3-8b-8192",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2
+    response = requests.post(
+        "http://localhost:11434/api/generate",
+        json={
+            "model": "llama3:8b",  
+            "prompt": prompt,
+            "stream": False 
+        }
     )
-    return response.choices[0].message.content
+    resp_json = response.json()
+    print("Ollama response:", resp_json)  # For debugging
+    if "response" in resp_json:
+        return resp_json["response"]
+    elif "error" in resp_json:
+        return f"Ollama error: {resp_json['error']}"
+    else:
+        return "Unexpected Ollama response format."
