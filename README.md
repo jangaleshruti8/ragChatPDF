@@ -108,6 +108,8 @@ python downloadModelSentenceTransformer.py
 This will download and save the `all-MiniLM-L6-v2` model to the `all-MiniLM-L6-v2/` directory.  
 **After this step, the embedding model is used completely offline.**
 
+Or Use the provided model 'all-MiniLM-L6-v2' 
+
 ### 4. Install and Set Up Ollama (for local LLM inference)
 
 - Download and install Ollama from: https://ollama.com/download
@@ -151,13 +153,6 @@ Visit: [http://localhost:5000](http://localhost:5000)
 git clone https://github.com/jangaleshruti8/ragChatPDF.git
 cd ragChatPDF
 ```
-
-
-#  RAG-based PDF Query Bot 
-
-This project allows you to upload a PDF (searchable or scanned) and ask natural language questions about its contents. It uses a **Retrieval-Augmented Generation (RAG)** approach powered by **FAISS for vector search** and **local LLMs via Ollama** for answering queries.
-
----
 
 **Note:**  
 - All models (embedding and LLM) are used locally; no external API calls are required after setup.
